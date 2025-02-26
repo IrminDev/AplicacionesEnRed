@@ -1,8 +1,10 @@
 #!/usr/bin python3
 import socket
-HOST = "127.0.0.1"  # Direccion de la interfaz de loopback estándar (localhost)
-PORT = 65432  # Puerto que usa el cliente  (los puertos sin provilegios son > 1023)
-buffer_size = 1024
+import os
+
+HOST = os.environ.get("HOST", "")  # Direccion de la interfaz de loopback estándar (localhost)
+PORT = int(os.environ.get("PORT", 65432))  # Puerto que usa el cliente  (los puertos sin provilegios son > 1023)
+buffer_size = int(os.environ.get("BUFFER_SIZE", 1024))
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPServerSocket:
     TCPServerSocket.bind((HOST, PORT))

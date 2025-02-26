@@ -1,0 +1,21 @@
+services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    environment:
+      HOST: server
+      PORT: 65432
+      BUFFER_SIZE: 1024
+    depends_on:
+      - server
+    entrypoint: ["sh", "-c", "sleep 5 && python client.py"]
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      PORT: 65432
+      HOST: 0.0.0.0 # Allow connections from any IP address
+      BUFFER_SIZE: 1024

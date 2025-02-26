@@ -1,10 +1,11 @@
 #!/usr/bin python3
 
 import socket
+import os
 
-HOST = "127.0.0.1"  # Hostname o  dirección IP del servidor
-PORT = 65432  # Puerto del servidor
-buffer_size = 1024
+HOST = os.environ.get("HOST", "")  # Direccion de la interfaz de loopback estándar (localhost)
+PORT = int(os.environ.get("PORT", 65432))  # Puerto que usa el cliente  (los puertos sin provilegios son > 1023)
+buffer_size = int(os.environ.get("BUFFER_SIZE", 1024))
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
     TCPClientSocket.connect((HOST, PORT))
