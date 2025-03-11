@@ -1,13 +1,13 @@
 services:
   server:
-    image: tcp-server
+    image: tcp-server-book
     environment:
       PORT: 65432
       HOST: server
       BUFFER_SIZE: 1024
 
   client:
-    image: tcp-client
+    image: tcp-client-book
     environment:
       HOST: server
       PORT: 65432
