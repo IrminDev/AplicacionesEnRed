@@ -106,7 +106,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPServerSocket:
             grid[dummyRow][dummyCol] = "O"
             printGrid(grid)
             if checkWin(grid, "O"):
-                Client_conn.sendall(b"You lose")
+                Client_conn.sendall(f"You lose: {dummyRow}|{dummyCol}".encode())
                 break
             if checkTie(grid):
                 Client_conn.sendall(f"Game over: {dummyRow}|{dummyCol}".encode())

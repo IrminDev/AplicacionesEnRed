@@ -58,7 +58,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
             printGrid(grid)
             print("Game over: Tie")
             break
-        if data == b"You lose":
+        if "You lose" in data.decode():
+            row, col = map(int, data.decode().split(":")[1].split("|"))
+            grid[row][col] = "O"
+            printGrid(grid)
             print("You lose")
             break
         row, col = map(int, data.decode().split("|"))
