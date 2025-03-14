@@ -78,7 +78,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPServerSocket:
         data = Client_conn.recv(buffer_size)
         print(data.decode())
         # Generate a random n between 3 and 5
-        n = random.randint(3, 6)
+        n = input("Enter the size of the grid (3-5): ")
+        while(int(n) < 3 or int(n) > 5):
+            n = input("Enter the size of the grid (3-5): ")
+        n = int(n)
         grid = generateGrid(n)
         printGrid(grid)
         player = "O"
@@ -88,7 +91,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPServerSocket:
             data = Client_conn.recv(buffer_size)
             if not data:
                 break
+            print(data)
             row, col = map(int, data.decode().split("|"))
+            if(row < 0 or row >= n or col < 0 or col >= n):
+                Client_conn.sendall(b"Invalid move")
+                continue
+            if grid[row][col] != " ":
+                Client_conn.sendall(b"Invalid move")
+                continue
+            else:
+                Client_conn.sendall(b"Valid move")
             grid[row][col] = "X"
             printGrid(grid)
             if checkWin(grid, "X"):
@@ -112,4 +124,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPServerSocket:
                 Client_conn.sendall(f"Game over: {dummyRow}|{dummyCol}".encode())
                 break
             Client_conn.sendall(f"{dummyRow}|{dummyCol}".encode())
+        Client_conn.close()
+    TCPServerSocket.close()
 

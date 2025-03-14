@@ -34,12 +34,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
     print("Your turn: ")
     row = int(input("Enter row: "))
     col = int(input("Enter col: "))
-    while grid[row][col] != " ":
+    TCPClientSocket.sendall(f"{row}|{col}".encode())
+    data = TCPClientSocket.recv(buffer_size)
+    while (data == b"Invalid move"):
         print("Invalid move")
         row = int(input("Enter row: "))
         col = int(input("Enter col: "))
+        TCPClientSocket.sendall(f"{row}|{col}".encode())
+        data =  TCPClientSocket.recv(buffer_size)
     grid[row][col] = "X"
-    TCPClientSocket.sendall(f"{row}|{col}".encode())
     print("Waiting for opponent's move...")
     while True:
         data = TCPClientSocket.recv(buffer_size)
@@ -70,9 +73,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
         print("Your turn: ")
         row = int(input("Enter row: "))
         col = int(input("Enter col: "))
-        while grid[row][col] != " ":
+        TCPClientSocket.sendall(f"{row}|{col}".encode())
+        data = TCPClientSocket.recv(buffer_size)
+        while (data == b"Invalid move"):
             print("Invalid move")
             row = int(input("Enter row: "))
             col = int(input("Enter col: "))
+            TCPClientSocket.sendall(f"{row}|{col}".encode())
+            data =  TCPClientSocket.recv(buffer_size)
         grid[row][col] = "X"
-        TCPClientSocket.sendall(f"{row}|{col}".encode())
+    TCPClientSocket.close()
