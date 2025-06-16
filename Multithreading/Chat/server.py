@@ -11,6 +11,7 @@ connections_lock = threading.Lock()
 threads = []
 connections = []
 client_names = {} 
+barrier = threading.Barrier(5)
 
 def broadcast(message, sender_conn):
     with connections_lock:

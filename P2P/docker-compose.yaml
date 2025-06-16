@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  server:
+    build: ./server
+    ports:
+      - "6881:6881"           # BitTorrent port
+      - "6881:6881/udp"       # UDP for DHT
+      - "8000:8000"           # HTTP server for torrent file
+    environment:
+      - FILE_PATH=/app/file.mp4
+      - TORRENT_NAME=distribute.torrent
+      - HTTP_PORT=8000
+
+  client:
+    build: ./client
+    depends_on:
+      - server
+    environment:
+      - SERVER_URL=http://server:8000/distribute.torrent
+      - DOWNLOAD_DIR=/app/downloads

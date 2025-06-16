@@ -1,0 +1,23 @@
+apt-get update
+
+apt-get install -y vsftpd
+
+touch vsftpd.conf &&
+echo "listen=YES
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+chroot_local_user=YES
+allow_writeable_chroot=YES
+pasv_enable=YES
+pasv_min_port=30000
+pasv_max_port=30009
+pasv_address=127.0.0.1
+" >> vsftpd.conf &&
+mv vsftpd.conf /etc/
+
+useradd -m ftpuser && echo "ftpuser:clave123" | chpasswd
+
+mkdir -p /var/run/vsftpd/empty
+
+vsftpd /etc/vsftpd.conf
