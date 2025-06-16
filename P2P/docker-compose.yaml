@@ -4,9 +4,9 @@ services:
   server:
     build: ./server
     ports:
-      - "6881:6881"           # BitTorrent port
-      - "6881:6881/udp"       # UDP for DHT
-      - "8000:8000"           # HTTP server for torrent file
+      - "6881:6881"          
+      - "6881:6881/udp"       
+      - "8000:8000"           
     environment:
       - FILE_PATH=/app/file.mp4
       - TORRENT_NAME=distribute.torrent
