@@ -1,21 +1,31 @@
-version: "3.8"
-
 services:
   server:
     build: ./server
-    ports:
-      - "6881:6881"          
-      - "6881:6881/udp"       
-      - "8000:8000"           
     environment:
-      - FILE_PATH=/app/file.mp4
+      - FILE_PATH=file.iso  # Custom file path
+      - CHUNK_SIZE_KB=2048             # 2MB chunks
+      - HTTP_PORT=8000                  # Default HTTP port
       - TORRENT_NAME=distribute.torrent
-      - HTTP_PORT=8000
+    ports:
+      - "6881:6881"
+      - "6881:6881/udp"
+      - "8000:8000"                     # HTTP port
 
   client:
     build: ./client
-    depends_on:
-      - server
     environment:
       - SERVER_URL=http://server:8000/distribute.torrent
-      - DOWNLOAD_DIR=/app/downloads
+    depends_on:
+      - server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/distribute.torrent"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.tx_queue_len: "1000"

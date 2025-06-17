@@ -3,84 +3,75 @@ import requests
 import os
 import time
 import logging
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class BitTorrentClient:
-    def __init__(self, server_url, download_dir):
-        self.server_url = server_url
-        self.download_dir = download_dir
+class P2PClient:
+    def __init__(self):
+        self.server_url = os.getenv("SERVER_URL", "http://server:8000/distribute.torrent")
+        self.download_dir = os.getenv("DOWNLOAD_DIR", "./downloads")
         self.torrent_path = "/tmp/distribute.torrent"
+        self.start_time = None
 
     def _fetch_torrent(self):
-        response = requests.get(self.server_url)
-        with open(self.torrent_path, "wb") as f:
-            f.write(response.content)
-        logger.info(f"Torrent file downloaded from {self.server_url}")
+        """Download torrent file from HTTP server with retries"""
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(self.server_url, timeout=10)
+                response.raise_for_status()
+                with open(self.torrent_path, "wb") as f:
+                    f.write(response.content)
+                logger.info(f"Torrent file downloaded from {self.server_url}")
+                return True
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1}/{max_retries}: {e}")
+                time.sleep(5)
+        raise RuntimeError(f"Failed to download torrent after {max_retries} attempts")
 
-    def _verify_download(self, handle):
-        os.makedirs(self.download_dir, exist_ok=True)
-        torrent_info = handle.torrent_file()
+    def download(self):
+        """Download with auto-seeding and timing"""
+        self.start_time = datetime.now()
         
-        for i in range(torrent_info.num_files()):
-            file_info = torrent_info.file_at(i)
-            file_path = os.path.join(self.download_dir, file_info.path)
-            
-            if os.path.exists(file_path):
-                file_size = os.path.getsize(file_path)
-                expected_size = file_info.size
-                logger.info(f"File: {file_path}")
-                logger.info(f"Size: {file_size} bytes (expected: {expected_size} bytes)")
-                
-                if file_size == expected_size:
-                    logger.info("✓ File size matches!")
-                    return True
-                else:
-                    logger.error("✗ File size mismatch!")
-                    return False
-            else:
-                logger.error(f"✗ File not found: {file_path}")
-                return False
-        
-        return False
-
-    def start_download(self):
-        """Start P2P download."""
+        # 1. Fetch torrent file
         self._fetch_torrent()
+        
+        # 2. Configure session
         ses = lt.session()
+        settings = ses.get_settings()
+        settings["enable_upnp"] = True
+        settings["enable_natpmp"] = True
+        ses.apply_settings(settings)  # Fixed: Changed from set_settings to apply_settings
+        
+        # 3. Start download
         params = {
             "save_path": self.download_dir,
             "ti": lt.torrent_info(self.torrent_path),
+            "storage_mode": lt.storage_mode_t.storage_mode_sparse
         }
         handle = ses.add_torrent(params)
         
-        torrent_info = handle.torrent_file()
-        logger.info(f"Download started: {torrent_info.name()}")
-        
-        while not handle.status().is_seeding:
-            s = handle.status()
+        logger.info("Starting download...")
+        while not handle.is_seed():
+            status = handle.status()
+            elapsed = (datetime.now() - self.start_time).total_seconds()
             logger.info(
-                f"Progress: {s.progress * 100:.2f}% | "
-                f"Peers: {s.num_peers} | "
-                f"DL: {s.download_rate / 1024:.2f} KB/s | "
-                f"UL: {s.upload_rate / 1024:.2f} KB/s"
+                f"[{elapsed:.1f}s] Progress: {status.progress * 100:.1f}% | "
+                f"DL: {status.download_rate / 1024:.1f} KB/s | "
+                f"Peers: {status.num_peers}"
             )
-            
-            if s.progress >= 1.0:
-                break
-                
-            time.sleep(5)
+            time.sleep(0.5)
         
-        logger.info("Download complete!")
+        total_time = (datetime.now() - self.start_time).total_seconds()
+        logger.info(f"Download completed in {total_time:.1f} seconds")
         
-        if self._verify_download(handle):
-            logger.info("✓ Download verification successful!")
-        else:
-            logger.error("✗ Download verification failed!")
+        # Continue seeding indefinitely
+        logger.info("Now seeding... Press Ctrl+C to stop")
+        while True:
+            time.sleep(10)
 
 if __name__ == "__main__":
-    client = BitTorrentClient(
-        server_url=os.getenv("SERVER_URL"),
-        download_dir=os.getenv("DOWNLOAD_DIR", "./downloads"))
-    client.start_download()
+    client = P2PClient()
+    client.download()

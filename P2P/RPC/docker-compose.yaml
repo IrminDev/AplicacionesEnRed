@@ -1,0 +1,20 @@
+services:
+  server:
+    build: ./server
+    environment:
+      - FILE_PATH=file.iso  # Override with real ISO
+    ports:
+      - "8000:8000"
+
+  client:
+    build: ./client
+    environment:
+      - SERVER_URL=http://server:8000/download
+    depends_on:
+      - server
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.tx_queue_len: "1000"
