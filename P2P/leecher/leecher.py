@@ -41,8 +41,10 @@ class P2PClient:
         
         ses = lt.session()
         settings = ses.get_settings()
-        settings["enable_upnp"] = True
-        settings["enable_natpmp"] = True
+        settings["enable_dht"] = False       # Disable DHT
+        settings["enable_lsd"] = True        # Enable LAN discovery
+        settings["enable_natpmp"] = False    # Disable NAT-PMP
+        settings["enable_upnp"] = False      # Disable UPnP
         ses.apply_settings(settings)
         
         params = {

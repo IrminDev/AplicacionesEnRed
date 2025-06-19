@@ -47,6 +47,13 @@ class P2PServer:
         """Start BitTorrent seeding with performance tracking"""
         self.start_time = datetime.now()
         ses = lt.session()
+        settings = ses.get_settings()
+        settings["enable_dht"] = False       # Disable DHT (no internet needed)
+        settings["enable_lsd"] = True        # Enable LAN discovery (recommended)
+        settings["enable_natpmp"] = False    # Disable NAT-PMP (no internet)
+        settings["enable_upnp"] = False      # Disable UPnP (no internet)
+        ses.apply_settings(settings)
+
         params = {
             "save_path": ".",
             "ti": lt.torrent_info(self.torrent_name),
