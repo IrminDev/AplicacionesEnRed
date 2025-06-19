@@ -5,16 +5,18 @@ import logging
 from datetime import datetime
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import threading
+import argparse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class P2PServer:
-    def __init__(self):
-        self.file_path = os.getenv("FILE_PATH", "large_file.bin")
-        self.torrent_name = os.getenv("TORRENT_NAME", "distribute.torrent")
-        self.chunk_size_kb = int(os.getenv("CHUNK_SIZE_KB", "2048"))  # Default: 2MB
-        self.http_port = int(os.getenv("HTTP_PORT", "8000"))
+    def __init__(self, file_path, torrent_name, chunk_size_kb, http_port, server_ip):
+        self.file_path = file_path
+        self.torrent_name = torrent_name
+        self.chunk_size_kb = chunk_size_kb
+        self.http_port = http_port
+        self.server_ip = server_ip
         self.start_time = None
 
     def _generate_torrent(self):
@@ -37,9 +39,9 @@ class P2PServer:
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=os.getcwd(), **kwargs)
 
-        self.http_server = HTTPServer(('0.0.0.0', self.http_port), Handler)
+        self.http_server = HTTPServer((self.server_ip, self.http_port), Handler)
         threading.Thread(target=self.http_server.serve_forever, daemon=True).start()
-        logger.info(f"Serving torrent on http://0.0.0.0:{self.http_port}/{self.torrent_name}")
+        logger.info(f"Serving torrent on http://{self.server_ip}:{self.http_port}/{self.torrent_name}")
 
     def _start_seeding(self):
         """Start BitTorrent seeding with performance tracking"""
@@ -48,11 +50,9 @@ class P2PServer:
         params = {
             "save_path": ".",
             "ti": lt.torrent_info(self.torrent_name),
-            # Removed invalid 'upload_mode' parameter
         }
         handle = ses.add_torrent(params)
         
-        # Enable upload mode AFTER adding torrent
         handle.set_upload_mode(True)
 
         while True:
@@ -69,6 +69,37 @@ class P2PServer:
         self._start_http_server()
         self._start_seeding()
 
-if __name__ == "__main__":
-    server = P2PServer()
+def main():
+    parser = argparse.ArgumentParser(description='P2P Server for file sharing')
+    parser.add_argument('--file-path', '-f', 
+                       required=True,
+                       help='Path to the file to share')
+    parser.add_argument('--torrent-name', '-t',
+                       default='distribute.torrent',
+                       help='Name of the torrent file to create (default: distribute.torrent)')
+    parser.add_argument('--chunk-size-kb', '-c',
+                       type=int,
+                       default=2048,
+                       help='Chunk size in KB (default: 2048)')
+    parser.add_argument('--http-port', '-p',
+                       type=int,
+                       default=8000,
+                       help='HTTP server port (default: 8000)')
+    parser.add_argument('--server-ip', '-s',
+                       default='0.0.0.0',
+                       help='Server IP address (default: 0.0.0.0)')
+    
+    args = parser.parse_args()
+    
+    server = P2PServer(
+        file_path=args.file_path,
+        torrent_name=args.torrent_name,
+        chunk_size_kb=args.chunk_size_kb,
+        http_port=args.http_port,
+        server_ip=args.server_ip
+    )
+    
     server.run()
+
+if __name__ == "__main__":
+    main()
